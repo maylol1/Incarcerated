@@ -32,7 +32,7 @@ local MSection = Tab:CreateSection("Aim")
 local Button = Tab:CreateButton({
    Name = "Aimbot | Toggle with E",
    Callback = function()
-            https://raw.githubusercontent.com/maylol1/Incarcerated/refs/heads/main/aimbot
+            loadstring(game:HttpGet('https://raw.githubusercontent.com/maylol1/Incarcerated/refs/heads/main/aimbot'))()
    end,
 })
 
