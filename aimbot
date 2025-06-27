@@ -1,0 +1,86 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local currentPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local aimbotEnabled = false
+local maxFOV = 60 -- in degrees
+local FOVCircleRadius = 175 -- pixel radius of FOV circle
+local smoothing = 0.2
+
+-- Drawing the FOV circle
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Radius = FOVCircleRadius
+FOVCircle.Thickness = 2
+FOVCircle.Transparency = 1
+FOVCircle.Color = Color3.fromRGB(255, 0, 0)
+FOVCircle.Filled = false
+
+-- Toggle aimbot with E key
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.E then
+        aimbotEnabled = not aimbotEnabled
+        print("Aimbot " .. (aimbotEnabled and "Enabled" or "Disabled"))
+    end
+end)
+
+-- Update circle position and size every frame
+RunService.RenderStepped:Connect(function()
+    local viewportSize = camera.ViewportSize
+    FOVCircle.Position = Vector2.new(viewportSize.X / 2, viewportSize.Y / 2)
+    FOVCircle.Visible = aimbotEnabled
+end)
+
+-- Check if world position is in FOV
+local function isInFOV(position)
+    local screenPoint, onScreen = camera:WorldToViewportPoint(position)
+    if onScreen then
+        local cameraDirection = camera.CFrame.LookVector
+        local directionToTarget = (position - camera.CFrame.Position).Unit
+        local angle = math.deg(math.acos(cameraDirection:Dot(directionToTarget)))
+        return angle <= maxFOV / 2
+    end
+    return false
+end
+
+-- Find closest enemy within FOV
+local function getClosestEnemyPlayer()
+    local closestEnemy
+    local shortestDistance = math.huge
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= currentPlayer and player.Character and currentPlayer.Character then
+            local isEnemy = not currentPlayer.Team or player.Team ~= currentPlayer.Team
+            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            local myRoot = currentPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+            if isEnemy and targetRoot and myRoot then
+                if isInFOV(targetRoot.Position) then
+                    local distance = (targetRoot.Position - myRoot.Position).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        closestEnemy = player
+                    end
+                end
+            end
+        end
+    end
+
+    return closestEnemy
+end
+
+-- Aim at the closest enemy
+local function aimAtClosestEnemyPlayer()
+    if not aimbotEnabled then return end
+
+    local target = getClosestEnemyPlayer()
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        local targetPos = target.Character.HumanoidRootPart.Position
+        camera.CFrame = camera.CFrame:Lerp(CFrame.new(camera.CFrame.Position, targetPos), smoothing)
+    end
+end
+
+-- Run every frame
+RunService.RenderStepped:Connect(aimAtClosestEnemyPlayer)
