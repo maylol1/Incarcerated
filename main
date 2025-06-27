@@ -30,7 +30,7 @@ local Tab = Window:CreateTab("Aim Section", nil) -- Title, Image
 local MSection = Tab:CreateSection("Aim")
 
 local Button = Tab:CreateButton({
-   Name = "Aimbot | Restart if you wanna stop aimbot",
+   Name = "Aimbot | Toggle with E",
    Callback = function()
             loadstring(game:HttpGet('https://pastebin.com/raw/4BWugFAV'))()
    end,
